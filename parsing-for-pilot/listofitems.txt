@@ -1,0 +1,45 @@
+1) List of items we need to combine into a single category:
+    Planks:
+        Oak Planks
+        Spruce Planks
+        Birch Planks
+        Jungle Planks
+        Acacia Planks
+        Dark Oak Planks
+    Logs:
+        Oak Logs
+        Spruce Logs
+        Birch Logs
+        Jungle Logs
+        Acacia Logs
+        Dark Oak Logs
+        Mangrove Logs
+
+2) Most common materials that are typicall held in hand:
+    To clarify, there are way more potential materials, however as I understand you wanted a list of most typical ones, right?
+
+        COAL
+        COBBLESTONE (also referred to as "stone" in our docs)
+        CRAFTING_TABLE
+        DIRT
+        FURNACE
+        IRON_AXE
+        IRON_PICAXE
+        IRON_ORE
+        IRON_INGOT
+        OAK_LOG
+        DARK_OAK_LOG
+        ACACIA_LOG
+        JUNGLE_LOG
+        SPRUCE_LOG
+        ACACIA_PLANKS
+        BIRCH_PLANKS
+        JUNGLE_PLANKS
+        DARK_OAK_PLANKS
+        STICK
+        STONE_AXE
+        STONE_PICKAXE
+        TORCH
+        WOODEN_AXE
+        WOODEN_PICKAXE
+        AIR (this means empty item / no held item / empty first in game)
