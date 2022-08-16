@@ -22,7 +22,7 @@ item2num={"COAL":0, "COBBLESTONE":1, "CRAFTING_TABLE":2, "DIRT":3, "FURNACE":4, 
 
 reward_mask=[0,16,4,0,32,0,128,64,256,1,2,4,0,0,32,0,0,8]
 reward_mask=np.array(reward_mask)
-FILENAME0="./trace_CraftPlayer{name=Kalbaser}.json"
+FILENAME0="./trace_Worker_768451.json"
 
 def read_json(jsonPath): 
     jDatas=[]
@@ -45,7 +45,7 @@ def extractFeatures(jDatas):
     inventory_firstGainOrder=np.zeros((18,)) #0
     order_count=1
     inventory_firstGainStep=np.zeros((18,)) #1
-    inventory_accum=np.zeros((18,)) #2
+    inventory_accum=np.zeros((18,)) #2.0 (return: inventory_accum_reward)
     inventory_rewardedGainStep=np.zeros((18,)) #3
     inventory_rewardedGainOrder=np.zeros((18,)) #4
     
@@ -145,11 +145,10 @@ def extractFeatures(jDatas):
     position_mov=pos_mov_count*1.0/len(jDatas)
     
     #(place) 15-18
-    torch_placed=inventory_accum[15]-(jDatas[steps-1]["inventoryTrace"]["TORCH"]-jDatas[0]["inventoryTrace"]["TORCH"])
-    cobblestone_placed=inventory_accum[1]-(jDatas[steps-1]["inventoryTrace"]["COBBLESTONE"]-jDatas[0]["inventoryTrace"]["COBBLESTONE"])
-    dirt_placed=inventory_accum[3]-(jDatas[steps-1]["inventoryTrace"]["DIRT"]-jDatas[0]["inventoryTrace"]["DIRT"])
-#     stone_placed=inventory_accum[12]-(jDatas[steps-1]["inventoryTrace"]["STONE"]-jDatas[0]["inventoryTrace"]["STONE"])
-    stone_placed=cobblestone_placed
+    torch_placed=inventory_accum[15]-(inventoryLists[steps-1][15]-inventoryLists[0][15])
+    cobblestone_placed=inventory_accum[1]-(inventoryLists[steps-1][1]-inventoryLists[0][1])
+    dirt_placed=inventory_accum[3]-(inventoryLists[steps-1][3]-inventoryLists[0][3])
+    stone_placed=inventory_accum[12]-(inventoryLists[steps-1][12]-inventoryLists[0][12])
     if_smelt_coal=False
     
     print("inventory_firstGainOrder:",inventory_firstGainOrder)
@@ -174,12 +173,13 @@ def extractFeatures(jDatas):
     print("position_mov:",position_mov)
     
     print("place(torch, cobblestone, dirt, stone):", torch_placed, cobblestone_placed, dirt_placed, stone_placed)
-
+    
     return (inventory_firstGainOrder, inventory_firstGainStep,\
             inventory_accum_reward, inventory_rewardedGainStep, inventory_rewardedGainOrder,\
             if_iron_axe, if_stone_axe, if_wooden_axe, sparse_reward, dense_reward, \
             attack_effi, attack_ratio, attack_equipped, camera_mov, position_mov, \
             torch_placed, cobblestone_placed, dirt_placed, stone_placed, if_smelt_coal)
+
 
 
 
@@ -248,35 +248,35 @@ if __name__ == "__main__":
     print("model loaded successfully!")
     
     print("\n###########################")
-    print("# 0: exit                 #")
-    print("# 1: print_decision_tree  #")
-    print("# 2: predict              #")
-    print("# 3: demo_predict         #")
+    # print("# 0: exit                 #")
+    print("# 1: predict              #")
+    print("# 2: demo_predict         #")
+    print("# 3: print_decision_tree  #")
     print("###########################")
     op_number = input("please input operation number:")
     
-    while op_number!='0':
-        if op_number=='1':
-            print_decision_tree(clf)
+    # while op_number!='0':
+    if op_number=='3':
+        print_decision_tree(clf)
 
-        if op_number=='2': 
-            FILENAME=input("please input file path of the input_tuple:")
-            if Path(FILENAME).is_file():
-                jDatas=read_json(FILENAME)
-            else:
-                jDatas=read_json(FILENAME0)     
-                
-            input_tuple=extractFeatures(jDatas)
-            check_input_tuple(input_tuple)
-            X_features=get_X_features(input_tuple)
-            predictions=predict(clf, X_features)
-            print("\npredictions:",predictions)
+    if op_number=='1': 
+        FILENAME=input("please input file path of the input_tuple:")
+        if Path(FILENAME).is_file():
+            jDatas=read_json(FILENAME)
+        else:
+            jDatas=read_json(FILENAME0)     
+            
+        input_tuple=extractFeatures(jDatas)
+        check_input_tuple(input_tuple)
+        X_features=get_X_features(input_tuple)
+        predictions=predict(clf, X_features)
+        print("\npredictions:",predictions)
 
-        if op_number=='3':
-            input_tuple=np.load("demo_data.npy",allow_pickle=True)
-            X_features=get_X_features(input_tuple)
-            print("\npredictions:",predict(clf, X_features))
+    if op_number=='2':
+        input_tuple=np.load("demo_data.npy",allow_pickle=True)
+        X_features=get_X_features(input_tuple)
+        print("\npredictions:",predict(clf, X_features))
         
-        op_number = input("please input operation number:")
+        # op_number = input("please input operation number:")
 
     print("Bye!")
