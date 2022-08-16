@@ -1,1 +1,12 @@
 
+Please put the "models" folder under the same directory with 'parser_and_classifier.py'. 
+Then run the 'parser_and_classifier.py'.
+
+The predict and demo_predict mode can only predict labels one by one. 
+demo_data.npy is one episode of demo data collected from the player.
+The size and features are as the descriptions.pdf shows.
+
+The "models" folder includes 7 models:
+	* km_0.model to km_4.model is for kmeans clustering of feature[0] to feature[4];
+	* RF-origin.model is the random forest model trained by original data-label pairs;
+	* RF-optim.model is the random forest model trained by optimized data-label pairs, the average accuracy in testing is usually 0.01-0.03 higher than RF-origin.model.
