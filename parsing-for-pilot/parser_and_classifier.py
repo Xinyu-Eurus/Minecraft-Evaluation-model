@@ -174,6 +174,9 @@ def extractFeatures(jDatas):
     
     print("place(torch, cobblestone, dirt, stone):", torch_placed, cobblestone_placed, dirt_placed, stone_placed)
     
+    # a = np.concatenate((inventory_firstGainOrder, inventory_firstGainStep, inventory_accum, inventory_accum_reward,inventory_rewardedGainStep,inventory_rewardedGainOrder),axis=0)
+    # np.savetxt("seqs.csv", a, delimiter=",")
+
     return (inventory_firstGainOrder, inventory_firstGainStep,\
             inventory_accum_reward, inventory_rewardedGainStep, inventory_rewardedGainOrder,\
             if_iron_axe, if_stone_axe, if_wooden_axe, sparse_reward, dense_reward, \
@@ -212,27 +215,16 @@ def get_X_features(input_tuple):
     km=[None]*5
     for i in range(5):
         km[i] = load('./models/km_'+str(i)+'.model')
-
-    X_features[:,0]=km[0].predict(input_tuple[0].reshape(-1,18)) 
-    X_features[:,1]=km[1].predict(input_tuple[1].reshape(-1,18)) 
-    X_features[:,2]=km[2].predict(input_tuple[2].reshape(-1,18)) 
-    X_features[:,3]=km[3].predict(input_tuple[3].reshape(-1,18)) 
-    X_features[:,4]=km[4].predict(input_tuple[4].reshape(-1,18)) 
-
+        X_features[:,i]=km[i].predict(input_tuple[i].reshape(-1,18)) 
+        print("X_features",i, X_features[:,i])
+    
     X_features[:,5]=1 if ((input_tuple[5]==bool and input_tuple[5]) or input_tuple[5]==1) else 0
     X_features[:,6]=1 if ((input_tuple[6]==bool and input_tuple[6]) or input_tuple[6]==1) else 0
     X_features[:,7]=1 if ((input_tuple[7]==bool and input_tuple[7]) or input_tuple[7]==1) else 0
-    X_features[:,8]=input_tuple[8]
-    X_features[:,9]=input_tuple[9]
-    X_features[:,10]=input_tuple[10]
-    X_features[:,11]=input_tuple[11]
-    X_features[:,12]=input_tuple[12]
-    X_features[:,13]=input_tuple[13]
-    X_features[:,14]=input_tuple[14]
-    X_features[:,15]=input_tuple[15]
-    X_features[:,16]=input_tuple[16]
-    X_features[:,17]=input_tuple[17]
-    X_features[:,18]=input_tuple[18]
+
+    for i in range(8,19):
+        X_features[:,i]=input_tuple[i]
+
     X_features[:,19]=1 if ((input_tuple[19]==bool and input_tuple[19]) or input_tuple[19]==1) else 0
 
     return X_features
