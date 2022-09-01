@@ -5,6 +5,7 @@ from sklearn.tree import export_text
 import numpy as np
 import json
 from pathlib import Path
+import sys
 
 FEATURES_NUM=20
 #default set of input_tuple
@@ -20,6 +21,7 @@ item2num={"COAL":0, "COBBLESTONE":1, "CRAFTING_TABLE":2, "DIRT":3, "FURNACE":4, 
          "STICK":11, "STONE":12, \
          "STONE_AXE":13, "STONE_PICKAXE":14, "TORCH":15, "WOODEN_AXE":16, "WOODEN_PICKAXE":17} #for inventoryTrace #currently no "STONE"
 
+playerLevels=["junior", "medium", "advanced"]
 reward_mask=[0,16,4,0,32,0,128,64,256,1,2,4,0,0,32,0,0,8]
 reward_mask=np.array(reward_mask)
 FILENAME0="./trace_Worker_768451.json"
@@ -206,7 +208,8 @@ def print_decision_tree(clf):
 
 def predict(clf, X_features):
     prediction = clf.predict(X_features)
-    return prediction
+    pred_prob=clf.predict_proba(X_features)
+    return prediction, pred_prob
 
 
 def get_X_features(input_tuple):
@@ -235,40 +238,73 @@ def check_input_tuple(input_tuple):
     
     
 #main
+# predict.py <path to json trace> <path to output json>
+# output format
+# {
+#   "player": "asdasd",
+#   "round": "asd", # currently missing in trace
+#   "evaluation": "good",
+#   "score_probabilities": [0.1,0.1,0.8]
+# }
 if __name__ == "__main__":
     clf=get_model()
     print("model loaded successfully!")
-    
-    print("\n###########################")
-    # print("# 0: exit                 #")
-    print("# 1: predict              #")
-    print("# 2: demo_predict         #")
-    print("# 3: print_decision_tree  #")
-    print("###########################")
-    op_number = input("please input operation number:")
-    
-    # while op_number!='0':
-    if op_number=='3':
-        print_decision_tree(clf)
 
-    if op_number=='1': 
-        FILENAME=input("please input file path of the input_tuple:")
-        if Path(FILENAME).is_file():
-            jDatas=read_json(FILENAME)
-        else:
-            jDatas=read_json(FILENAME0)     
-            
-        input_tuple=extractFeatures(jDatas)
-        check_input_tuple(input_tuple)
-        X_features=get_X_features(input_tuple)
-        predictions=predict(clf, X_features)
-        print("\npredictions:",predictions)
-
-    if op_number=='2':
-        input_tuple=np.load("demo_data.npy",allow_pickle=True)
-        X_features=get_X_features(input_tuple)
-        print("\npredictions:",predict(clf, X_features))
+    FILENAME = sys.argv[1]
+    OUTPATH = sys.argv[2]
+    # FILENAME=input("please input file path of the input_tuple:")
+    # OUTPATH=input("please input file path to store the prediction:")
+    if Path(FILENAME).is_file():
+        jDatas=read_json(FILENAME)
+    else:
+        jDatas=read_json(FILENAME0)     
         
-        # op_number = input("please input operation number:")
+    input_tuple=extractFeatures(jDatas)
+    check_input_tuple(input_tuple)
+    X_features=get_X_features(input_tuple)
+    predictions, pred_prob=predict(clf, X_features)
+    print("\npredictions:",predictions)
+    print("\npred_prob:",pred_prob)
 
-    print("Bye!")
+    evaluation=playerLevels[int(predictions[0])]
+    jOutput={"player": jDatas[0]["player"], \
+            #"round":jDatas[0]["round"], \
+            "evaluation": evaluation,
+            "score_probabilities":pred_prob[0].tolist()}
+    jsondata = json.dumps(jOutput,indent=4,separators=(',', ': '))
+    f = open(OUTPATH+'.json', 'w')
+    f.write(jsondata)
+    f.close()
+    
+    # print("\n###########################")
+    # # print("# 0: exit                 #")
+    # print("# 1: predict              #")
+    # print("# 2: demo_predict         #")
+    # print("# 3: print_decision_tree  #")
+    # print("###########################")
+    # op_number = input("please input operation number:")
+    
+    # # while op_number!='0':
+    # if op_number=='3':
+    #     print_decision_tree(clf)
+
+    # if op_number=='1': 
+    #     FILENAME=input("please input file path of the input_tuple:")
+    #     if Path(FILENAME).is_file():
+    #         jDatas=read_json(FILENAME)
+    #     else:
+    #         jDatas=read_json(FILENAME0)     
+            
+    #     input_tuple=extractFeatures(jDatas)
+    #     check_input_tuple(input_tuple)
+    #     X_features=get_X_features(input_tuple)
+    #     predictions=predict(clf, X_features)
+    #     print("\npredictions:",predictions)
+
+    # if op_number=='2':
+    #     input_tuple=np.load("demo_data.npy",allow_pickle=True)
+    #     X_features=get_X_features(input_tuple)
+    #     print("\npredictions:",predict(clf, X_features))
+        
+    #     # op_number = input("please input operation number:")
+    # print("Bye!")
