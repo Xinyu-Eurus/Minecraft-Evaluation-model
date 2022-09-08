@@ -6,6 +6,8 @@ import numpy as np
 import json
 from pathlib import Path
 import sys
+import os
+import re
 
 FEATURES_NUM=20
 #default set of input_tuple
@@ -24,7 +26,7 @@ item2num={"COAL":0, "COBBLESTONE":1, "CRAFTING_TABLE":2, "DIRT":3, "FURNACE":4, 
 playerLevels=["junior", "medium", "advanced"]
 reward_mask=[0,16,4,0,32,0,128,64,256,1,2,4,0,0,32,0,0,8]
 reward_mask=np.array(reward_mask)
-FILENAME0="./trace_Worker_768451.json"
+FILENAME0="./trace_Worker171576.json"
 
 def read_json(jsonPath): 
     jDatas=[]
@@ -61,7 +63,8 @@ def extractFeatures(jDatas):
     inventoryTrace0=jDatas[0]["inventoryTrace"]
     inventorylist0=np.zeros((18,))
     for item in inventoryTrace0.keys():
-        inventorylist0[item2num[item]] = inventoryTrace0[item]
+        if item in item2num.keys():
+            inventorylist0[item2num[item]] = inventoryTrace0[item]
     inventoryLists.append(inventorylist0)
     
     #movings0
@@ -77,7 +80,8 @@ def extractFeatures(jDatas):
 #         inventorydiff={inventorydiff[key]=inventoryTrace[key]-inventoryTrace0[key] for key in inventoryTrace.keys()}
         inventorylist=np.zeros((18,))
         for item in inventoryTrace.keys():
-            inventorylist[item2num[item]] = inventoryTrace[item]
+            if item in item2num.keys():
+                inventorylist[item2num[item]] = inventoryTrace[item]
         inventoryLists.append(inventorylist)
         
         inventorydiff=inventorylist-inventorylist0
@@ -87,7 +91,7 @@ def extractFeatures(jDatas):
         if np.any(inventorydiff>0):
             inventory_accum+=np.where(inventorydiff>0,inventorydiff,0)
             nonz_idx=np.where(inventorydiff>0)
-            for idx in nonz_idx: 
+            for idx in nonz_idx[0]: 
                 if inventory_firstGainOrder[idx]==0:
                     inventory_firstGainOrder[idx]=order_count
                     order_count+=1
@@ -138,6 +142,8 @@ def extractFeatures(jDatas):
     dense_reward=np.sum(inventory_accum_reward)
     
     #(attack) 10-12
+    if attack_count==0:
+        attack_count+=1
     attack_effi=(inventory_accum[1]+inventory_accum[7]+inventory_accum[9])*1.0/attack_count #total_digged_items/attack
     attack_ratio=attack_count*1.0/len(jDatas) #attack/steps
     attack_equipped=equip_tool_atk_count*1.0/attack_count #attack_and_equipped_pickaxe/attack
@@ -236,7 +242,57 @@ def check_input_tuple(input_tuple):
     assert(len(input_tuple)==20)
     assert(len(input_tuple[0])==18 and len(input_tuple[1])==18 and len(input_tuple[2])==18)
     
-    
+def single_file_rw(FILENAME, OUTPATH):
+    jDatas=read_json(FILENAME)
+          
+    input_tuple=extractFeatures(jDatas)
+    check_input_tuple(input_tuple)
+    X_features=get_X_features(input_tuple)
+    predictions, pred_prob=predict(clf, X_features)
+    print("\npredictions:",predictions)
+    print("\npred_prob:",pred_prob)
+
+    evaluation=playerLevels[int(predictions[0])]
+    jOutput={"player": jDatas[0]["player"], \
+            "roundId":jDatas[0]["roundId"], \
+            "evaluation": evaluation,
+            "score_probabilities":pred_prob[0].tolist()}
+    jsondata = json.dumps(jOutput,indent=4,separators=(',', ': '))
+    f = open(OUTPATH+'.json', 'w')
+    f.write(jsondata)
+    f.close()
+
+def batch_files_rw(FILEPATH, OUTPATH):
+    jsonList=[]
+    g = os.walk(FILEPATH)  
+    for path,dir_list,file_list in g:
+        for file_name in sorted(file_list):
+            print('\n\n'+file_name)
+            if file_name==".DS_Store":
+                continue
+            jsonPath = os.path.join(path, file_name)
+            
+            jDatas=read_json(jsonPath)
+
+            input_tuple=extractFeatures(jDatas)
+            check_input_tuple(input_tuple)
+            X_features=get_X_features(input_tuple)
+            predictions, pred_prob=predict(clf, X_features)
+            print("\npredictions:",predictions)
+            print("\npred_prob:",pred_prob)
+
+            evaluation=playerLevels[int(predictions[0])]
+            jOutput={"player": jDatas[0]["player"], \
+                    "roundId":jDatas[0]["roundId"], \
+                    "evaluation": evaluation,
+                    "score_probabilities":pred_prob[0].tolist()}
+            jsonList.append(jOutput)        
+
+    f = open(OUTPATH+'.json', 'w')
+    for jdic in jsonList:
+        f.write(json.dumps(jdic)+'\n')
+    f.close()
+
 #main
 # predict.py <path to json trace> <path to output json>
 # output format
@@ -254,27 +310,15 @@ if __name__ == "__main__":
     OUTPATH = sys.argv[2]
     # FILENAME=input("please input file path of the input_tuple:")
     # OUTPATH=input("please input file path to store the prediction:")
+    
+    # if re.search('.json', FILENAME):
     if Path(FILENAME).is_file():
-        jDatas=read_json(FILENAME)
+        single_file_rw(FILENAME, OUTPATH)
+    elif Path(FILENAME).is_dir():    
+        batch_files_rw(FILENAME, OUTPATH)
     else:
-        jDatas=read_json(FILENAME0)     
-        
-    input_tuple=extractFeatures(jDatas)
-    check_input_tuple(input_tuple)
-    X_features=get_X_features(input_tuple)
-    predictions, pred_prob=predict(clf, X_features)
-    print("\npredictions:",predictions)
-    print("\npred_prob:",pred_prob)
+        single_file_rw(FILENAME0, OUTPATH)
 
-    evaluation=playerLevels[int(predictions[0])]
-    jOutput={"player": jDatas[0]["player"], \
-            #"round":jDatas[0]["round"], \
-            "evaluation": evaluation,
-            "score_probabilities":pred_prob[0].tolist()}
-    jsondata = json.dumps(jOutput,indent=4,separators=(',', ': '))
-    f = open(OUTPATH+'.json', 'w')
-    f.write(jsondata)
-    f.close()
     
     # print("\n###########################")
     # # print("# 0: exit                 #")
