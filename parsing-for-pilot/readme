@@ -1,11 +1,40 @@
+Please put the "models" folder under the same directory with "parser_and_classifier_2.py". 
 
-Please put the "models" folder under the same directory with 'parser_and_classifier.py'. 
-Then run the 'parser_and_classifier.py'.
+Please build the test data folder as following structure: 
 
-The predict and demo_predict mode can only predict labels one by one. 
+<test data> (e.g. "./test-data/test-12-26") (under the same directory with "parser_and_classifier_2.py")
+	/trace
+		(put all worker trace json files here)
+		(they start with "trace_worker...")
+	/survey
+		(put all manager survey json files here)
+		(they start with "surveyTrace_...")
+
+
+
+To run the "parser_and_classifier_2.py", please input 2 paramaters to indicate the input/output file path.
+sys.argv[1]: path of <test data> (e.g. "./test-data/test-12-26")
+sys.argv[2]: path of the output json (prediction results and features, default named "features.json"). 
+Use "-" for the second parameter if you want the output json "features.json" under the same path of test data.
+
+e.g. (run in the terminal command line)
+	$ python ./parser_and_classifier.py ./test-data/test-12-26 -
+Then one file named "features.json" will be generated.
+
+
+To run the "json2csv.py", please input 1 paramater.
+sys.argv[1]: path of <test data> (e.g. "./test-data/test-12-26")
+
+e.g. (run in the terminal command line)
+	$ python ./json2csv.py ./test-data/test-12-26
+Then one file named "fea_m_compare.csv" will be generated under path of <test data>.
+
+
+
+
+Others informations:
 demo_data.npy is one episode of demo data collected from the player.
 The size and features are as the descriptions.pdf shows.
-
 The "models" folder includes 7 models:
 	* km_0.model to km_4.model is for kmeans clustering of feature[0] to feature[4];
 	* RF-origin.model is the random forest model trained by original data-label pairs;
